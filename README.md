@@ -135,3 +135,52 @@ Secrets and environment variables were securely managed via GitHub Secrets and e
 **Future:** Add monitoring/logging and rollback strategies, explore IaC (Terraform/Bicep)
 
 
+## 🏗️ High-Level Design (HLD)
+
+### Overview
+BhaadShurakshaDal is designed with a **Next.js frontend**, **API backend**, **PostgreSQL database**, and **Redis cache**, deployed on **AWS/Azure** for scalability and reliability.
+
+### Architecture
+
+- **Frontend (Next.js + TypeScript):**
+  - Pages: `/login`, `/dashboard`, `/alerts`, `/map`
+  - Data Fetching: Client-side fetch for public data, Server Actions / API Routes for sensitive requests
+
+- **Backend (Next.js API Routes / Server Actions):**
+  - Handles authentication, alert broadcasting, risk computation
+  - Request validation and error handling
+
+- **Database (PostgreSQL + Prisma):**
+  - Tables: Users, Alerts, Locations
+  - Read/write via Prisma ORM
+  - Conceptual migrations for schema updates
+
+- **Cache (Redis):**
+  - Stores sessions, frequently accessed alerts
+  - Cache-aside strategy with TTL for freshness
+
+- **External Services:**
+  - Auth: NextAuth
+  - Notifications: AWS SNS / Email
+  - File Storage: S3 / Azure Blob
+
+- **Cloud Deployment (AWS/Azure):**
+  - App: ECS / App Service
+  - DB: RDS / Azure Database for PostgreSQL
+  - Cache: ElastiCache / Azure Cache
+  - CDN: CloudFront / Azure CDN
+
+- **CI/CD (GitHub Actions):**
+  - Build → Test → Migrate → Deploy
+  - Dev / Stage / Prod environments
+
+### Data Flow
+
+Client → CDN → Frontend → Backend API → DB / Redis → External Services
+
+
+### Security & Observability
+- Secrets in AWS Secrets Manager / Azure Key Vault
+- Logging: CloudWatch / App Insights
+- Error tracking: Sentry
+
