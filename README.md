@@ -1,5 +1,7 @@
-# 🌊 BhaadShurakshaDal  
-### 🚨 AI-Powered Flood Early Warning & Community Alert System  
+# 🌊 BhaadShurakshaDal
+
+### 🚨 AI-Powered Flood Early Warning & Community Alert System
+
 **By Team Baazigaar**
 
 BhaadShurakshaDal is a full-stack web platform that provides real-time flood risk monitoring and early alerts to help communities prepare before disasters strike.  
@@ -10,9 +12,10 @@ It uses free weather APIs, intelligent risk logic, and cloud notifications.
 ## 🎯 Problem Statement
 
 Floods cause massive damage every year due to:
-- Late warnings  
-- Poor local awareness  
-- Lack of real-time accessible data  
+
+- Late warnings
+- Poor local awareness
+- Lack of real-time accessible data
 
 Most people don’t receive early alerts or understand risk levels clearly.
 
@@ -27,13 +30,14 @@ The platform provides:
 ✅ Location-based alerts  
 ✅ Map visualization  
 ✅ Emergency safety guidance  
-✅ Admin alert broadcasting  
+✅ Admin alert broadcasting
 
 ---
 
 ## 🚀 Features
 
 ### 👤 User Features
+
 - 📍 Select district / pincode
 - 🌧️ View real-time rainfall & forecast
 - 🚦 Risk level indicator
@@ -42,6 +46,7 @@ The platform provides:
 - 🧭 Safety tips and emergency contacts
 
 ### 🛠️ Admin Features
+
 - Add flood-prone zones
 - Broadcast alerts
 - View registered users
@@ -50,10 +55,11 @@ The platform provides:
 ## Understanding Cloud Deployments: Docker → CI/CD → AWS/Azure
 
 ### Overview
+
 This assignment explores how we deployed **BhaadShurakshaDal** from local development to the cloud using **Docker**, **CI/CD**, and **AWS/Azure**. The goal was to ensure consistent environments, automate deployment, and handle secrets securely.
 
-
 ### Dockerization
+
 We containerized the app for reliable environments.
 
 **Dockerfile** highlights:
@@ -67,12 +73,12 @@ COPY . .
 RUN npm run build
 EXPOSE 3000
 CMD ["npm", "start"]
-````
+```
 
 **Docker Compose** for local dev (Next.js + Postgres + Redis):
 
 ```yaml
-version: '3.8'
+version: "3.8"
 services:
   app:
     build: .
@@ -94,10 +100,10 @@ services:
 
 Automated with **GitHub Actions**:
 
-* Build Docker image
-* Run unit tests & linting
-* Push image to cloud registry
-* Deploy to AWS ECS / Azure App Service
+- Build Docker image
+- Run unit tests & linting
+- Push image to cloud registry
+- Deploy to AWS ECS / Azure App Service
 
 Snippet:
 
@@ -134,10 +140,10 @@ Secrets and environment variables were securely managed via GitHub Secrets and e
 **Successes:** Consistent environments, automated deployments, simplified infrastructure
 **Future:** Add monitoring/logging and rollback strategies, explore IaC (Terraform/Bicep)
 
-
 ## 🏗️ High-Level Design (HLD)
 
 ### Overview
+
 BhaadShurakshaDal is designed with a **Next.js frontend**, **API backend**, **PostgreSQL database**, and **Redis cache**, deployed on **AWS/Azure** for scalability and reliability.
 
 ### Architecture
@@ -178,9 +184,24 @@ BhaadShurakshaDal is designed with a **Next.js frontend**, **API backend**, **Po
 
 Client → CDN → Frontend → Backend API → DB / Redis → External Services
 
-
 ### Security & Observability
+
 - Secrets in AWS Secrets Manager / Azure Key Vault
 - Logging: CloudWatch / App Insights
 - Error tracking: Sentry
 
+## Branch Naming Convention
+
+Our team follows a structured Git branch naming pattern:
+
+- feature/<name> → for new features
+- fix/<name> → for bug fixes
+- chore/<name> → for configuration or maintenance
+- docs/<name> → for documentation updates
+
+### Examples
+
+- feature/flood-alert-ui
+- feature/user-auth
+- fix/api-timeout
+- docs/readme-update

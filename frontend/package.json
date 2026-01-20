@@ -9,7 +9,10 @@
     "build:development": "cross-env NODE_ENV=development next build",
     "build:staging": "cross-env NODE_ENV=staging next build",
     "build:production": "cross-env NODE_ENV=production next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "eslint . --fix",
+    "format": "prettier --write .",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/client": "^7.2.0",
