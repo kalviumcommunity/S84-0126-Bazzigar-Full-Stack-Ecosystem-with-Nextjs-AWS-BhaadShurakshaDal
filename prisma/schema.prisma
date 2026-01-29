@@ -1,29 +1,218 @@
+// Bhaad Suraksha Dal - Database Schema
+// A fully normalized relational database for emergency response management
+// Using PostgreSQL with Prisma ORM
+
+datasource db {
+  provider = "postgresql"
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+/// Member roles in the system
+enum MemberRole {
+  ADMIN
+  COMMANDER
+  VOLUNTEER
 }
 
-model Location {
-  id        String   @id @default(uuid())
-  name      String
-  latitude  Float
-  longitude Float
-  riskLevel String
-  createdAt DateTime @default(now())
-
-  alerts Alert[]
+/// Status of a duty/assignment
+enum DutyStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
 }
 
-model Alert {
-  id          String   @id @default(uuid())
-  message     String
-  severity    String
-  locationId  String
+/// Priority level of a duty
+enum DutyPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+/// Types of incidents that can be reported
+enum IncidentType {
+  INJURY
+  ACCIDENT
+  SECURITY_THREAT
+  PROPERTY_DAMAGE
+  HEALTH_EMERGENCY
+  FIRE
+  NATURAL_DISASTER
+  CIVIL_UNREST
+  OTHER
+}
+
+/// Severity level of an incident
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+/// Status of an incident report
+enum IncidentStatus {
+  OPEN
+  UNDER_INVESTIGATION
+  RESOLVED
+  CLOSED
+}
+
+// ============================================================================
+// MODELS
+// ============================================================================
+
+/// Members of the Bhaad Suraksha Dal organization
+model Member {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String   @db.VarChar(255)
+  phone         String   @unique
+  role          MemberRole
+  dateOfJoining DateTime @default(now())
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  teamLeaderships    Team[]           @relation("LeadedBy")
+  teamMemberships    TeamMembership[]
+  dutyAssignments    Duty[]           @relation("CreatedBy")
+  incidentReports    IncidentReport[] @relation("ReportedBy")
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@index([isActive])
+  @@map("members")
+}
+
+/// Teams composed of multiple members
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  leaderId    String
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  location Location @relation(fields: [locationId], references: [id])
+  // Relations
+  leader       Member           @relation("LeadedBy", fields: [leaderId], references: [id], onDelete: Restrict)
+  members      TeamMembership[]
+  duties       Duty[]
+
+  @@index([leaderId])
+  @@index([name])
+  @@map("teams")
 }
+
+/// Junction table for Team-Member many-to-many relationship
+model TeamMembership {
+  id        String   @id @default(cuid())
+  teamId    String
+  memberId  String
+  joinedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, memberId])
+  @@index([teamId])
+  @@index([memberId])
+  @@map("team_memberships")
+}
+
+/// Duties/assignments allocated to teams
+model Duty {
+  id            String      @id @default(cuid())
+  title         String      @db.VarChar(255)
+  description   String?     @db.Text
+  teamId        String
+  startDateTime DateTime
+  endDateTime   DateTime
+  status        DutyStatus  @default(PLANNED)
+  location      String      @db.VarChar(255)
+  priority      DutyPriority @default(MEDIUM)
+  createdById   String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  team              Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy         Member            @relation("CreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  incidentReports   IncidentReport[]
+
+  @@index([teamId])
+  @@index([createdById])
+  @@index([status])
+  @@index([priority])
+  @@index([startDateTime])
+  @@index([endDateTime])
+  @@map("duties")
+}
+
+/// Incident reports filed during duties
+model IncidentReport {
+  id            String           @id @default(cuid())
+  dutyId        String
+  reportedById  String
+  incidentType  IncidentType
+  severity      IncidentSeverity
+  description   String           @db.Text
+  location      String           @db.VarChar(255)
+  reportedAt    DateTime         @default(now())
+  status        IncidentStatus   @default(OPEN)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  // Relations
+  duty       Duty   @relation(fields: [dutyId], references: [id], onDelete: Cascade)
+  reportedBy Member @relation("ReportedBy", fields: [reportedById], references: [id], onDelete: Restrict)
+
+  @@index([dutyId])
+  @@index([reportedById])
+  @@index([status])
+  @@index([severity])
+  @@index([incidentType])
+  @@index([reportedAt])
+  @@map("incident_reports")
+}
+
+// ============================================================================
+// SCHEMA DOCUMENTATION
+// ============================================================================
+// 
+// DATABASE NORMALIZATION:
+// - 1NF: All attributes are atomic; no repeating groups
+// - 2NF: All non-key attributes fully depend on primary key
+// - 3NF: No transitive dependencies between non-key attributes
+//
+// RELATIONSHIPS:
+// - Member → Team: One-to-Many (1 Member leads multiple Teams)
+// - Member ↔ Team: Many-to-Many (via TeamMembership junction table)
+// - Team → Duty: One-to-Many (1 Team has many Duties)
+// - Duty → IncidentReport: One-to-Many (1 Duty has many IncidentReports)
+// - Member → IncidentReport: One-to-Many (1 Member files many Reports)
+//
+// CONSTRAINTS:
+// - CUID as primary keys for distributed systems
+// - UNIQUE on email, phone, team name to prevent duplicates
+// - NOT NULL on critical fields
+// - ON DELETE CASCADE for dependent records
+// - ON DELETE RESTRICT to prevent orphaning
+//
+// INDEXES:
+// - Foreign keys indexed for join performance
+// - Status and priority indexed for filtering queries
+// - Timestamps indexed for range queries
+// - Email/phone indexed for lookup queries

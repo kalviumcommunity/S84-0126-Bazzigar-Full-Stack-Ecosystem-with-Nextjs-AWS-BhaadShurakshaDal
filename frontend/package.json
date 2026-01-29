@@ -12,7 +12,10 @@
     "start": "next start",
     "lint": "eslint . --fix",
     "format": "prettier --write .",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "db:migrate": "npx prisma migrate dev",
+    "db:seed": "npx prisma db seed",
+    "db:studio": "npx prisma studio"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -39,5 +42,8 @@
     "prisma": "^7.2.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "node --loader tsx prisma/seed.ts"
   }
 }
