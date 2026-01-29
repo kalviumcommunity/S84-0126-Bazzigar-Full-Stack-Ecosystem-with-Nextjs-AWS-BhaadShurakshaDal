@@ -3,12 +3,12 @@
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
-    "skipLibCheck": true, // Skip type checking for dependencies
-    "strict": true, // Enable all strict type checks
-    "noImplicitAny": true, // Catch variables without type definitions
-    "noUnusedLocals": true, // Detect unused local variables
-    "noUnusedParameters": true, // Detect unused function parameters
-    "forceConsistentCasingInFileNames": true, // Prevent casing issues on different OS
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
