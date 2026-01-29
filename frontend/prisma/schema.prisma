@@ -6,23 +6,378 @@ datasource db {
   provider = "postgresql"
 }
 
-model Location {
-  id        String   @id @default(uuid())
-  name      String
-  latitude  Float
-  longitude Float
-  riskLevel String
-  createdAt DateTime @default(now())
+// ============================================
+// USER MANAGEMENT
+// ============================================
 
-  alerts Alert[]
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique @db.VarChar(255)
+  phone         String?   @unique @db.VarChar(20)
+  firstName      String    @db.VarChar(100)
+  lastName      String?   @db.VarChar(100)
+  password      String    @db.VarChar(255)
+  role          UserRole  @default(USER)
+  status        UserStatus @default(ACTIVE)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  userPreferences UserPreference?
+  subscriptions   Subscription[]
+  alerts          UserAlert[]
+  emergencyContacts EmergencyContact[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([status])
 }
 
-model Alert {
-  id          String   @id @default(uuid())
-  message     String
-  severity    String
-  locationId  String
-  createdAt   DateTime @default(now())
+enum UserRole {
+  USER
+  ADMIN
+}
 
-  location Location @relation(fields: [locationId], references: [id])
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model UserPreference {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  alertNotifications Boolean  @default(true)
+  emailAlerts        Boolean  @default(true)
+  smsAlerts          Boolean  @default(true)
+  inAppAlerts        Boolean  @default(true)
+  riskThreshold      String   @default("MEDIUM") // CRITICAL, HIGH, MEDIUM, LOW
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
+// LOCATION & GEOGRAPHY
+// ============================================
+
+model District {
+  id          String   @id @default(uuid())
+  name        String   @unique @db.VarChar(100)
+  state       String   @db.VarChar(100)
+  latitude    Float
+  longitude   Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  zones       Zone[]
+  riskProfile DistrictRiskProfile[]
+
+  @@index([state])
+}
+
+model Zone {
+  id              String   @id @default(uuid())
+  name            String   @db.VarChar(150)
+  districtId      String
+  latitude        Float
+  longitude       Float
+  riskLevel       RiskLevel @default(LOW)
+  floodProneness  Float    @default(0) // 0-1 scale (0=not prone, 1=highly prone)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  district        District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  locations       Location[]
+  weatherData     WeatherData[]
+
+  @@index([districtId])
+  @@index([riskLevel])
+}
+
+model Location {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(150)
+  zoneId    String
+  latitude  Float
+  longitude Float
+  pincode   String   @db.VarChar(10)
+  riskLevel RiskLevel @default(LOW)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  zone          Zone            @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  alerts        Alert[]
+  subscriptions Subscription[]
+  weatherData   WeatherData[]
+
+  @@index([zoneId])
+  @@index([pincode])
+  @@index([riskLevel])
+}
+
+enum RiskLevel {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// ============================================
+// WEATHER & MONITORING
+// ============================================
+
+model WeatherData {
+  id              String   @id @default(uuid())
+  zoneId          String
+  locationId      String?
+  temperature     Float
+  humidity        Float
+  rainfall        Float   // in mm
+  windSpeed       Float   // in km/h
+  pressure        Float   // in hPa
+  condition       String  @db.VarChar(100)
+  recordedAt      DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  zone            Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  location        Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([zoneId])
+  @@index([locationId])
+  @@index([recordedAt])
+}
+
+model DistrictRiskProfile {
+  id              String   @id @default(uuid())
+  districtId      String
+  riskScore       Float   // 0-1 scale
+  averageRainfall Float   // Historical average
+  floodHistory    Int     // Number of floods in past 5 years
+  lastFloodDate   DateTime?
+  recordedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  district        District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
+  @@index([districtId])
+  @@index([recordedAt])
+}
+
+// ============================================
+// ALERTS & NOTIFICATIONS
+// ============================================
+
+model Alert {
+  id              String    @id @default(uuid())
+  locationId      String
+  title           String    @db.VarChar(200)
+  message         String    @db.Text
+  severity        AlertSeverity
+  alertType       AlertType
+  status          AlertStatus @default(ACTIVE)
+  riskScore       Float?
+  weatherTrigger  String?   @db.VarChar(100)
+  issuedBy        String?   // Admin user ID
+  issuedAt        DateTime  @default(now())
+  expectedEndAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  expiredAt       DateTime?
+
+  location        Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  userAlerts      UserAlert[]
+  safetyGuidance  SafetyGuidance[]
+
+  @@index([locationId])
+  @@index([severity])
+  @@index([status])
+  @@index([issuedAt])
+}
+
+enum AlertSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum AlertType {
+  FLOOD_WARNING
+  HEAVY_RAINFALL
+  WEATHER_ADVISORY
+  ALL_CLEAR
+  MANDATORY_EVACUATION
+}
+
+enum AlertStatus {
+  ACTIVE
+  RESOLVED
+  EXPIRED
+  CANCELLED
+}
+
+model UserAlert {
+  id              String    @id @default(uuid())
+  userId          String
+  alertId         String
+  isRead          Boolean   @default(false)
+  readAt          DateTime?
+  notificationSent Boolean  @default(false)
+  sentVia         NotificationChannel[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alert           Alert     @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, alertId])
+  @@index([userId])
+  @@index([alertId])
+  @@index([isRead])
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id              String    @id @default(uuid())
+  userId          String
+  type            NotificationType
+  title           String    @db.VarChar(200)
+  message         String    @db.Text
+  channel         NotificationChannel
+  status          NotificationStatus @default(PENDING)
+  sentAt          DateTime?
+  readAt          DateTime?
+  retryCount      Int       @default(0)
+  metadata        String?   @db.Text // JSON
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([channel])
+}
+
+enum NotificationType {
+  ALERT
+  SAFETY_TIP
+  SYSTEM_UPDATE
+  REMINDER
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+  READ
+}
+
+// ============================================
+// SUBSCRIPTIONS
+// ============================================
+
+model Subscription {
+  id            String    @id @default(uuid())
+  userId        String
+  locationId    String
+  notifyFor     RiskLevel[] @default([HIGH, CRITICAL])
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location      Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId])
+  @@index([userId])
+  @@index([locationId])
+}
+
+// ============================================
+// EMERGENCY & SAFETY
+// ============================================
+
+model EmergencyContact {
+  id              String   @id @default(uuid())
+  userId          String
+  name            String   @db.VarChar(150)
+  phone           String   @db.VarChar(20)
+  type            EmergencyContactType
+  isPrimary       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum EmergencyContactType {
+  FAMILY
+  FRIEND
+  COMMUNITY_LEADER
+  AUTHORITIES
+}
+
+model SafetyGuidance {
+  id              String   @id @default(uuid())
+  alertId         String
+  title           String   @db.VarChar(200)
+  content         String   @db.Text
+  priority        Int      @default(1)
+  actionItems     String?  @db.Text // JSON array of action items
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  alert           Alert    @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([alertId])
+}
+
+// ============================================
+// AUDIT & LOGGING
+// ============================================
+
+model AuditLog {
+  id              String   @id @default(uuid())
+  entityType      String   @db.VarChar(50)
+  entityId        String
+  action          AuditAction
+  changedFields   String?  @db.Text // JSON
+  performedBy     String?
+  ipAddress       String?  @db.VarChar(45)
+  createdAt       DateTime @default(now())
+
+  @@index([entityType])
+  @@index([entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
 }
