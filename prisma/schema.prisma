@@ -66,6 +66,23 @@ enum IncidentStatus {
   CLOSED
 }
 
+/// Status of a case
+enum CaseStatus {
+  OPEN
+  UNDER_REVIEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+/// Priority level of a case
+enum CasePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -87,6 +104,8 @@ model Member {
   teamMemberships    TeamMembership[]
   dutyAssignments    Duty[]           @relation("CreatedBy")
   incidentReports    IncidentReport[] @relation("ReportedBy")
+  casesReported      Case[]           @relation("ReportedBy")
+  casesAssigned      Case[]           @relation("AssignedTo")
 
   @@index([email])
   @@index([phone])
@@ -188,6 +207,35 @@ model IncidentReport {
   @@map("incident_reports")
 }
 
+/// Cases represent formal issue tracking for incidents and emergency management
+/// Each case links to a reporter and optionally an assigned handler
+/// This demonstrates a one-to-many relationship: Member → Case
+model Case {
+  id           String      @id @default(cuid())
+  title        String      @db.VarChar(255)
+  description  String      @db.Text
+  status       CaseStatus  @default(OPEN)
+  priority     CasePriority @default(MEDIUM)
+  reportedById String
+  assignedToId String?
+  reportedAt   DateTime    @default(now())
+  resolvedAt   DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relations
+  reportedBy Member  @relation("ReportedBy", fields: [reportedById], references: [id], onDelete: Restrict)
+  assignedTo Member? @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([reportedById])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+  @@index([reportedAt])
+  @@index([resolvedAt])
+  @@map("cases")
+}
+
 // ============================================================================
 // SCHEMA DOCUMENTATION
 // ============================================================================
@@ -203,6 +251,7 @@ model IncidentReport {
 // - Team → Duty: One-to-Many (1 Team has many Duties)
 // - Duty → IncidentReport: One-to-Many (1 Duty has many IncidentReports)
 // - Member → IncidentReport: One-to-Many (1 Member files many Reports)
+// - Member → Case: One-to-Many (1 Member can report/be assigned multiple Cases)
 //
 // CONSTRAINTS:
 // - CUID as primary keys for distributed systems
@@ -210,6 +259,7 @@ model IncidentReport {
 // - NOT NULL on critical fields
 // - ON DELETE CASCADE for dependent records
 // - ON DELETE RESTRICT to prevent orphaning
+// - ON DELETE SET NULL for optional foreign keys (Case.assignedToId)
 //
 // INDEXES:
 // - Foreign keys indexed for join performance
