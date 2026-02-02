@@ -1,71 +1,68 @@
 /**
- * API Route Example - Member Query
- * ============================================================================
- *
- * This example demonstrates how to use Prisma in a Next.js API route
- * to fetch members from the Bhaad Suraksha Dal database.
+ * API Route - User Management
+ * =========================================================
+ * Uses Prisma + Next.js App Router
+ * Works with existing schema.prisma (NO schema changes)
  */
 
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, UserRole, UserStatus } from "@prisma/client";
 
 /**
- * GET /api/members
+ * GET /api/users
  *
- * Query Parameters:
- * - role?: ADMIN | COMMANDER | VOLUNTEER (filter by role)
- * - active?: true | false (filter by isActive status)
- * - page?: number (pagination, default: 1)
- * - limit?: number (items per page, default: 10)
- *
- * Returns: Array of members with optional relations
+ * Query Params:
+ * - role?: USER | ADMIN
+ * - active?: true | false
+ * - page?: number (default: 1)
+ * - limit?: number (default: 10)
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
 
-    // Extract query parameters
-    const role = searchParams.get("role");
-    const active = searchParams.get("active") === "true";
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const role = searchParams.get("role") as UserRole | null;
+    const active = searchParams.get("active");
+    const page = Number(searchParams.get("page") || 1);
+    const limit = Number(searchParams.get("limit") || 10);
 
-    // Build where clause
-    const where: Record<string, unknown> = {};
+    const where: Prisma.UserWhereInput = {};
+
     if (role) {
       where.role = role;
     }
-    if (searchParams.get("active") !== null) {
-      where.isActive = active;
+
+    if (active !== null) {
+      where.status =
+        active === "true" ? UserStatus.ACTIVE : UserStatus.INACTIVE;
     }
 
-    // Pagination
     const skip = (page - 1) * limit;
 
-    // Fetch members with optional relations
-    const [members, total] = await Promise.all([
-      prisma.member.findMany({
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
         where,
-        include: {
-          teamLeaderships: {
-            select: { id: true, name: true },
-          },
-          teamMemberships: {
-            select: {
-              team: { select: { id: true, name: true } },
-            },
-          },
-        },
         skip,
         take: limit,
-        orderBy: { dateOfJoining: "asc" },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          status: true,
+          createdAt: true,
+        },
       }),
-      prisma.member.count({ where }),
+      prisma.user.count({ where }),
     ]);
 
     return NextResponse.json({
       success: true,
-      data: members,
+      data: users,
       pagination: {
         page,
         limit,
@@ -74,49 +71,51 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[GET /api/members] Error:", error);
+    console.error("[GET /api/users] Error:", error);
 
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to fetch members",
-      },
+      { success: false, error: "Failed to fetch users" },
       { status: 500 }
     );
   }
 }
 
 /**
- * POST /api/members
+ * POST /api/users
  *
- * Request Body:
+ * Body:
  * {
- *   email: string (required, unique)
- *   name: string (required)
- *   phone: string (required, unique)
- *   role: "ADMIN" | "COMMANDER" | "VOLUNTEER" (required)
+ *   email: string
+ *   phone?: string
+ *   firstName: string
+ *   lastName?: string
+ *   password: string
+ *   role?: USER | ADMIN
  * }
- *
- * Returns: Created member object
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validate required fields
-    const { email, name, phone, role } = body;
-    if (!email || !name || !phone || !role) {
+    const {
+      email,
+      phone,
+      firstName,
+      lastName,
+      password,
+      role = UserRole.USER,
+    } = body;
+
+    if (!email || !firstName || !password) {
       return NextResponse.json(
         {
           success: false,
-          error: "Missing required fields: email, name, phone, role",
+          error: "Missing required fields: email, firstName, password",
         },
         { status: 400 }
       );
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -125,56 +124,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate role
-    const validRoles = ["ADMIN", "COMMANDER", "VOLUNTEER"];
-    if (!validRoles.includes(role)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid role. Must be one of: ${validRoles.join(", ")}`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Create member
-    const member = await prisma.member.create({
+    const user = await prisma.user.create({
       data: {
         email,
-        name,
         phone,
+        firstName,
+        lastName,
+        password,
         role,
-        dateOfJoining: new Date(),
-        isActive: true,
+        status: UserStatus.ACTIVE,
       },
     });
 
-    return NextResponse.json({ success: true, data: member }, { status: 201 });
+    return NextResponse.json({ success: true, data: user }, { status: 201 });
   } catch (error) {
-    console.error("[POST /api/members] Error:", error);
+    console.error("[POST /api/users] Error:", error);
 
-    // Handle unique constraint violations
-    if (
-      error instanceof Object &&
-      "code" in error &&
-      (error as any).code === "P2002"
-    ) {
-      const field = (error as any).meta?.target?.[0] || "field";
-      return NextResponse.json(
-        {
-          success: false,
-          error: `${field} already exists`,
-        },
-        { status: 409 }
-      );
+    // ✅ Proper Prisma error handling (NO `any`)
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        const field = error.meta?.target?.[0] ?? "field";
+        return NextResponse.json(
+          { success: false, error: `${field} already exists` },
+          { status: 409 }
+        );
+      }
     }
 
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to create member",
-      },
+      { success: false, error: "Failed to create user" },
       { status: 500 }
     );
   }

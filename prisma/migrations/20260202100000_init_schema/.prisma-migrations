@@ -1,0 +1,5 @@
+{
+  "checksum": "f8d4a5b2c9e1f7a3d6b8c4e9a2f5d7b9",
+  "name": "init_schema",
+  "description": "Initialize core database schema with members, teams, duties, incident reports"
+}
