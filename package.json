@@ -16,6 +16,7 @@
     "typescript": "^5.3.3"
   },
   "scripts": {
+    "dev": "cd frontend && npm run dev",
     "prepare": "husky install",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",

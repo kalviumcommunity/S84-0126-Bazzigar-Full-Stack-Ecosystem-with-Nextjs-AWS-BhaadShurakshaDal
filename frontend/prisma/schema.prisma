@@ -29,6 +29,7 @@ model User {
   subscriptions   Subscription[]
   alerts          UserAlert[]
   emergencyContacts EmergencyContact[]
+  notifications   Notification[]
 
   @@index([email])
   @@index([phone])
