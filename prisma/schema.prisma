@@ -21,6 +21,23 @@ enum MemberRole {
   VOLUNTEER
 }
 
+/// Complaint status for transaction management
+enum ComplaintStatus {
+  FILED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+/// Payment status for transaction management
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
 /// Status of a duty/assignment
 enum DutyStatus {
   PLANNED
@@ -106,6 +123,10 @@ model Member {
   incidentReports    IncidentReport[] @relation("ReportedBy")
   casesReported      Case[]           @relation("ReportedBy")
   casesAssigned      Case[]           @relation("AssignedTo")
+  complaintsFiled    Complaint[]      @relation("ComplaintsFiled")
+  approvalsGiven     ApprovalRecord[] @relation("ApprovalsGiven")
+  paymentsReceived   Payment[]        @relation("PaymentsReceived")
+  reliefFund         ReliefFund?      @relation("ReliefFund")
 
   @@index([email])
   @@index([phone])
@@ -234,6 +255,97 @@ model Case {
   @@index([reportedAt])
   @@index([resolvedAt])
   @@map("cases")
+}
+
+/// Complaints registered by community members
+/// Demonstrates transaction scenario: complaint filing + member status update
+model Complaint {
+  id          String          @id @default(cuid())
+  title       String          @db.VarChar(255)
+  description String          @db.Text
+  memberId    String
+  status      ComplaintStatus @default(FILED)
+  severity    IncidentSeverity @default(MEDIUM)
+  location    String          @db.VarChar(255)
+  filedAt     DateTime        @default(now())
+  resolvedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  // Relations
+  member        Member @relation("ComplaintsFiled", fields: [memberId], references: [id], onDelete: Cascade)
+  approvalRecord ApprovalRecord?
+
+  // Indexes for transaction queries
+  @@index([memberId])
+  @@index([status])
+  @@index([severity])
+  @@index([filedAt])
+  @@index([resolvedAt])
+  @@map("complaints")
+}
+
+/// Approval records for complaint complaints
+/// Demonstrates transaction scenario: complaint approval + fund allocation
+model ApprovalRecord {
+  id           String   @id @default(cuid())
+  complaintId  String   @unique
+  approvedById String
+  amountAllocated Decimal @db.Decimal(10, 2)
+  approvalDate DateTime @default(now())
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  complaint  Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  approvedBy Member    @relation("ApprovalsGiven", fields: [approvedById], references: [id], onDelete: Restrict)
+
+  @@index([complaintId])
+  @@index([approvedById])
+  @@map("approval_records")
+}
+
+/// Payment records for relief fund disbursements
+/// Demonstrates transaction scenario: payment processing + fund balance update
+model Payment {
+  id              String        @id @default(cuid())
+  complaintId     String
+  memberId        String
+  amount          Decimal       @db.Decimal(10, 2)
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   String        @db.VarChar(50)
+  transactionId   String?       @unique @db.VarChar(100)
+  processedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  member        Member    @relation("PaymentsReceived", fields: [memberId], references: [id], onDelete: Cascade)
+
+  // Indexes for transaction queries
+  @@index([memberId])
+  @@index([complaintId])
+  @@index([status])
+  @@index([processedAt])
+  @@map("payments")
+}
+
+/// Fund tracking for relief distribution
+/// Demonstrates transaction scenario: balance updates during payment processing
+model ReliefFund {
+  id              String   @id @default(cuid())
+  memberId        String   @unique
+  totalAllocated  Decimal  @db.Decimal(12, 2) @default(0)
+  amountDispersed Decimal  @db.Decimal(12, 2) @default(0)
+  lastUpdated     DateTime @default(now()) @updatedAt
+  createdAt       DateTime @default(now())
+
+  // Relations
+  member         Member @relation("ReliefFund", fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@map("relief_funds")
 }
 
 // ============================================================================
