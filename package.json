@@ -1,32 +1,12 @@
 {
-  "dependencies": {
-    "@prisma/client": "^7.2.0",
-    "cross-env": "^10.1.0",
-    "dotenv": "^16.4.7",
-    "prisma": "^7.2.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.6",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.5",
-    "husky": "^8.0.0",
-    "lint-staged": "^13.2.3",
-    "prettier": "^3.8.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
-  },
+  "name": "bazzigar-ecosystem",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "prepare": "husky install",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed",
-    "db:reset": "prisma migrate reset",
-    "db:studio": "prisma studio",
-    "db:verify": "ts-node prisma/verify.ts",
-    "db:push": "prisma db push",
-    "db:status": "prisma migrate status"
-  },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "db:backend": "npm run db:studio --workspace=backend"
   }
 }
