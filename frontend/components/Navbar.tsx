@@ -27,6 +27,7 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-600 dark:text-zinc-400">
           <Link href="/" className="hover:text-black dark:hover:text-white transition-colors">Home</Link>
+          <Link href="/about" className="hover:text-black dark:hover:text-white transition-colors">About</Link>
           <Link href="/alerts" className="hover:text-black dark:hover:text-white transition-colors">Alerts</Link>
           <Link href="/map" className="hover:text-black dark:hover:text-white transition-colors">Map</Link>
           <Link href="/resources" className="hover:text-black dark:hover:text-white transition-colors">Resources</Link>
