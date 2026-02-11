@@ -15,7 +15,10 @@
     "type-check": "tsc --noEmit",
     "db:migrate": "npx prisma migrate dev",
     "db:seed": "npx prisma db seed",
-    "db:studio": "npx prisma studio"
+    "db:studio": "npx prisma studio",
+    "postinstall": "prisma generate",
+    "clean": "rimraf .next node_modules/.cache",
+    "reinstall": "npm run clean && npm install"
   },
   "dependencies": {
     "@prisma/client": "^7.2.0",
