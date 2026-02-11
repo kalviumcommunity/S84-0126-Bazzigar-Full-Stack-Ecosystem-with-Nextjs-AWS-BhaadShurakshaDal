@@ -1,15 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #09090b;
-  --primary: #006fee;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
   --card: #ffffff;
-  --card-foreground: #09090b;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #006fee;
+  --card-foreground: #0f172a;
+  --border: #cbd5e1;
+  --input: #e2e8f0;
+  --ring: #3b82f6;
+  --accent: #06b6d4;
+  --accent-foreground: #ffffff;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
   
   --font-sans: "Inter", sans-serif;
 }
@@ -47,15 +51,17 @@ body {
 
 /* Glassmorphism utility */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(203, 213, 225, 0.5);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 .dark .glass {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
 }
 
 /* Gradient text */

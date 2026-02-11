@@ -18,21 +18,21 @@ export default function RiskDashboard() {
         initial={{ rotateX: 10, opacity: 0 }}
         whileInView={{ rotateX: 0, opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="glass rounded-3xl p-8 border border-white/10 relative overflow-hidden group"
+        className="glass rounded-3xl p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group shadow-lg"
       >
         {/* Glow Effect */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/20 rounded-full blur-[80px] group-hover:bg-red-500/30 transition-colors duration-500" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-red-400/20 dark:bg-red-500/20 rounded-full blur-[80px] group-hover:bg-red-500/30 transition-colors duration-500" />
 
         <div className="relative z-10">
           <div className="flex justify-between items-start mb-8">
             <div>
-              <h3 className="text-zinc-500 dark:text-zinc-400 font-medium mb-1">Live Monitor</h3>
-              <h2 className="text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <h3 className="text-slate-600 dark:text-zinc-400 font-medium mb-1">Live Monitor</h3>
+              <h2 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 {mockData.location}
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
               </h2>
             </div>
-            <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-2 rounded-xl flex items-center gap-2 animate-pulse">
+            <div className="bg-red-500/20 border border-red-500/50 text-red-700 dark:text-red-200 px-4 py-2 rounded-xl flex items-center gap-2 animate-pulse font-semibold shadow-md">
               <AlertTriangle className="w-5 h-5" />
               <span className="font-bold">FLOOD RISK: HIGH</span>
             </div>
@@ -90,16 +90,16 @@ export default function RiskDashboard() {
 
 function StatCard({ icon, label, value, trend, trendUp, danger = false }: any) {
   return (
-    <div className={`p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors ${danger ? 'ring-1 ring-red-500/50 bg-red-500/10' : ''}`}>
+    <div className={`p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/5 hover:bg-white/70 dark:hover:bg-white/10 transition-colors shadow-sm ${danger ? 'ring-2 ring-red-500/50 bg-red-50 dark:bg-red-500/10' : ''}`}>
       <div className="flex justify-between items-start mb-4">
-        <div className="p-2 rounded-lg bg-white/5">{icon}</div>
-        <span className={`text-xs font-bold px-2 py-1 rounded-full ${trendUp ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`}>
+        <div className="p-2 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:bg-white/5">{icon}</div>
+        <span className={`text-xs font-bold px-2 py-1 rounded-full ${trendUp ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300'}`}>
           {trend}
         </span>
       </div>
       <div>
-        <p className="text-zinc-500 dark:text-zinc-400 text-sm">{label}</p>
-        <p className="text-xl font-bold text-zinc-900 dark:text-white mt-1">{value}</p>
+        <p className="text-slate-600 dark:text-zinc-400 text-sm font-medium">{label}</p>
+        <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{value}</p>
       </div>
     </div>
   );
